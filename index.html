@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+	<script src="js/enchant.js"></script>
+</head>
+<body style="margin:0; padding: 0;">
+<script>
+	enchant(); // initialize
+	var game = new Core(960, 320);
+	game.preload('img/map1.png', 'img/chara1.png', 'img/icon0.png'); // preload image
+	game.fps = 30;
+	game.scale = 2;
+	game.onload = function(){
+		var map = new Map(320, 320);
+		map.image = game.assets['img/map0.png'];
+		/*map.loadData(
+			[
+				[4, 4, 4, 4, 4, 4, 4],
+				[4, 5, 5, 5, 5, 5, 4],
+				[4, 5, 4, 5, 4, 5, 4],
+				[4, 5, 5, 5, 5, 5, 4],
+				[4, 5, 4, 5, 4, 5, 4],
+				[4, 5, 5, 5, 5, 5, 4],
+				[4, 4, 4, 4, 4, 4, 4]
+			]
+		);*/
+		game.rootScene.addChild(map);
+
+		// make new class for player
+		var Player = enchant.Class.create(enchant.Sprite, {
+			initialize: function(){
+				enchant.Sprite.call(this, 32, 32);
+				this.image = game.assets['img/chara1.png'];
+				this.frame = 5;                   // set image data
+				game.rootScene.addChild(this);     // add to canvas
+			}
+		});
+
+		// make new class for apple
+		var Apple = enchant.Class.create(enchant.Sprite, {
+			initialize: function(){
+				enchant.Sprite.call(this, 16, 16);
+				this.image = game.assets['img/icon0.png']; // set image
+				this.moveTo(player.x, player.y + 8);       // move to the position
+				this.tl.moveBy(960, 0, 30);        // set movement
+				this.frame = 15;                   // set image data
+				game.rootScene.addChild(this);     // add to canvas
+			}
+		});
+
+		// make new class for enemy
+		var Enemy = enchant.Class.create(enchant.Sprite, {
+			initialize: function(){
+				enchant.Sprite.call(this, 32, 32);
+				this.image = game.assets['img/chara1.png']; // set image
+				this.moveTo(960, Math.floor(Math.random() * 800)); // set position .4
+				this.scaleX = -1;
+				this.tl.moveBy(-1000, 0, 160);      // set movement
+				this.frame = [0, 0, 1, 1, 0, 0, 2, 2];
+				game.rootScene.addChild(this);     // canvas
+			}
+		});
+
+		var player = new Player();
+
+		// scoring and score label
+		var score = 0;
+		var slabel = new Label("REKT: " + score.toString());
+		slabel.x = 0;
+		slabel.y = 0;
+		slabel.color = 'red';
+		slabel.font = '10px';
+		game.rootScene.addChild(slabel); 
+		
+		game.rootScene.on('enterframe', function(){
+			var hits = Apple.intersect(Enemy);
+			for(var i = 0, len = hits.length; i < len; i++){
+				game.rootScene.removeChild(hits[i][0]);
+				game.rootScene.removeChild(hits[i][1]);
+				score ++;
+				slabel = score.toString();
+			}
+
+			var gothit = Enemy.intersect(player);
+			for(var i = 0, len = gothit.length; i < len; i++){
+				var xdiff = player.x - gothit[i].x;
+				var ydiff = player.y - gothit[i].y;
+				if(ydiff < 1 && ydiff > -1 || xdiff < 1 && xdiff > -1){
+					alert('Game Over Bro! You Rekt: ' + score);
+					game.stop();
+				}
+			}
+			//if(Enemy.within(player, 5)){
+			//	alert('Game Over Bro! You Rekt: ' + score);
+            //	game.stop();
+			//}
+		});
+		
+		slabel.addEventListener('enterframe', function(){
+			this.text = "REKT: " + score.toString()
+		});
+
+		// generate enemy every 60 frames
+		var ecount = 15;
+		game.rootScene.tl.then(function() {
+			var enemy = new Enemy();
+			if(ecount > 0 && score%100 == 0){ ecount--; }
+		}).delay(ecount).loop();                    // wait 60 frames and loop it!
+
+		// add event listener (called when click/touch started)
+		game.rootScene.on('touchstart', function(evt){
+			player.y = evt.localY;    // set position to touch-y position
+			var apple = new Apple();
+		});
+
+		// add event listener (called when click/touch moved)
+		game.rootScene.on('touchmove', function(evt){
+			player.y = evt.localY;    // set position to touch-y position
+		});
+
+		game.keybind(32, 'shoot'); 
+		player.addEventListener(Event.ENTER_FRAME, function () {
+			//console.log(player.frame);
+			if (game.input.right) {
+				player.x += 3;
+				player.frame = [5, 5, 6, 6, 5, 5, 7, 7];
+			} else if (game.input.left) {
+				player.x -= 3;
+				player.frame = [5, 5, 6, 6, 5, 5, 7, 7];
+			} else if(game.input.up) {
+				player.y -= 3;
+				player.frame = [5, 5, 6, 6, 5, 5, 7, 7];
+			} else if(game.input.down) {
+				player.y += 3;
+				player.frame = [5, 5, 6, 6, 5, 5, 7, 7];
+			}else if(game.input.shoot){
+				var apple = new Apple();
+				player.frame = [8, 8, 5, 5];
+			}
+
+			console.log(player.within(Enemy, 5));
+		});
+	};
+
+	game.start(); // start your game!
+</script>
+</body>
+</html>
